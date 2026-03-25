@@ -6,6 +6,7 @@ class BatteryState: ObservableObject {
     @Published var percentage: Double = 1.0
     @Published var isCharging: Bool = false
     @Published var isPlugged: Bool = false
+    @Published var timeRemaining: Int = 0 // in minutes
     
     private var runLoopSource: CFRunLoopSource?
     
@@ -53,9 +54,24 @@ class BatteryState: ObservableObject {
                 }
             }
             
-            if let psState = info[kIOPSPowerSourceStateKey] as? String {
+            if let isPluggedState = info[kIOPSPowerSourceStateKey] as? String {
                 DispatchQueue.main.async {
-                    self.isPlugged = (psState == kIOPSACPowerValue)
+                    self.isPlugged = (isPluggedState == kIOPSACPowerValue)
+                }
+            }
+            
+            // Time remaining in minutes
+            if let timeEmpty = info[kIOPSTimeToEmptyKey] as? Int, timeEmpty > 0 {
+                DispatchQueue.main.async {
+                    self.timeRemaining = timeEmpty
+                }
+            } else if let timeFull = info[kIOPSTimeToFullChargeKey] as? Int, timeFull > 0 {
+                DispatchQueue.main.async {
+                    self.timeRemaining = timeFull
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.timeRemaining = 0 // Unknown or calculating
                 }
             }
         }

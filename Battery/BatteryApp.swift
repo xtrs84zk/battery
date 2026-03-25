@@ -12,23 +12,52 @@ struct BatteryApp: App {
     }
 }
 
+class ClickThroughHostingView<Content: View>: NSHostingView<Content> {
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        return nil
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     let batteryState = BatteryState()
+    var popover: NSPopover!
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Setup Popover
+        popover = NSPopover()
+        popover.contentSize = NSSize(width: 240, height: 120)
+        popover.behavior = .transient
+        // Using NSHostingController to wrap the popover view
+        popover.contentViewController = NSHostingController(rootView: BatteryPopoverView(state: batteryState))
+        
+        // Setup Menu Bar Item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem.button {
+            // Draw custom view inside the button
             let iconView = BatteryIconView(state: batteryState)
-            let hostingView = NSHostingView(rootView: iconView)
+            let hostingView = ClickThroughHostingView(rootView: iconView)
             
-            // Adjust to proper size
-            hostingView.frame = NSRect(x: 0, y: 0, width: 44, height: 22)
+            // Widen the frame slightly to 42 so the animated coffee cup has room without clipping
+            hostingView.frame = NSRect(x: 0, y: 0, width: 42, height: 22)
+            
             button.addSubview(hostingView)
-            
-            // Allow the button to be clicked, but since we have a hosting view on top, we'll need to handle it or pass hits. Let's just set the frame.
             button.frame = hostingView.frame
+            
+            // Define click action
+            button.action = #selector(togglePopover(_:))
+            button.target = self
+        }
+    }
+    
+    @objc func togglePopover(_ sender: AnyObject?) {
+        if let button = statusItem.button {
+            if popover.isShown {
+                popover.performClose(sender)
+            } else {
+                popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
+            }
         }
     }
 }
