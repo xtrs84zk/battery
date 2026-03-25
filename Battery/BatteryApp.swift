@@ -48,10 +48,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Define click action
             button.action = #selector(togglePopover(_:))
             button.target = self
+            
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
     }
     
     @objc func togglePopover(_ sender: AnyObject?) {
+        if let event = NSApp.currentEvent, event.type == .rightMouseUp {
+            let menu = NSMenu()
+            menu.addItem(NSMenuItem(title: "Quit Battery", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+            
+            statusItem.menu = menu
+            statusItem.button?.performClick(nil)
+            // Immediately clear the menu so the next left-click goes back to native Action triggers
+            statusItem.menu = nil
+            return
+        }
+        
+        // Handle normal left click
         if let button = statusItem.button {
             if popover.isShown {
                 popover.performClose(sender)
