@@ -1,0 +1,30 @@
+# General
+.DS_Store
+*.swp
+*~
+
+# Build artifacts
+build/
+DerivedData/
+*.app
+*.app.dSYM
+
+# Xcode Specific
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.pins
+
+# CocoaPods & Carthage (just in case you add them later)
+Pods/
+Carthage/Build/
