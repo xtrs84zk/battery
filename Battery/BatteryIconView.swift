@@ -15,8 +15,8 @@ struct BatteryIconView: View {
         // Red color overrides green when percentage is critically low!
         if state.percentage <= 0.15 {
             return .red
-        } else if state.isCharging && state.percentage >= 0.9 {
-            return .green
+        } else if state.isCharging && state.percentage >= 0.95 {
+            return Color(red: 0.15, green: 0.75, blue: 0.25)
         } else {
             return Color.primary.opacity(0.4)
         }
