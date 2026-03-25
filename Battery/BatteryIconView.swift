@@ -12,10 +12,11 @@ struct BatteryIconView: View {
     let innerGap: CGFloat = 1.0 
     
     private var juiceColor: Color {
-        if state.isCharging {
-            return .green
-        } else if state.percentage <= 0.15 {
+        // Red color overrides green when percentage is critically low!
+        if state.percentage <= 0.15 {
             return .red
+        } else if state.isCharging && state.percentage >= 0.9 {
+            return .green
         } else {
             return Color.primary.opacity(0.4)
         }
