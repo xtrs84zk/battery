@@ -23,12 +23,18 @@ struct BatteryIconView: View {
     }
     
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 4) {
             // Plug icon (if plugged in)
             if state.isPlugged {
-                PlugIcon()
-                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 1.0, lineCap: .round, lineJoin: .round))
-                    .frame(width: 7, height: 9)
+                ZStack {
+                    // Hollow when charging (drinking), filled when just plugged in!
+                    if !state.isCharging {
+                        PlugIcon().fill(Color.primary.opacity(0.4))
+                    }
+                    PlugIcon().stroke(Color.primary, style: StrokeStyle(lineWidth: 1.0, lineCap: .round, lineJoin: .round))
+                }
+                .frame(width: 7, height: 9)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             
             ZStack(alignment: .leading) {
@@ -75,6 +81,7 @@ struct BatteryIconView: View {
             .frame(width: bodyWidth + 1.5, height: bodyHeight)
         }
         .padding(.horizontal, 2)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: state.isPlugged)
     }
 }
 
@@ -89,9 +96,9 @@ struct FaceView: View {
     
     var expression: FaceExpression {
         if state.isPlugged && !state.isCharging { return .sad }
-        if state.percentage <= 0.20 { return .sad }
+        if state.percentage <= 0.20 && !state.isCharging { return .sad }
         if state.percentage <= 0.35 && !state.isCharging { return .neutral }
-        return .happy
+        return .happy // If it's charging, ALWAYS happy!
     }
     
     var body: some View {
@@ -137,24 +144,37 @@ struct FaceView: View {
 struct PlugIcon: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
-        let cy = rect.midY
-        let prongsWidth: CGFloat = rect.width * 0.4
         
-        // Top prong
-        path.move(to: CGPoint(x: 0, y: cy - 2.0))
-        path.addLine(to: CGPoint(x: prongsWidth, y: cy - 2.0))
+        let cupBottomWidth: CGFloat = 3.0
+        let cupTopWidth: CGFloat = 5.0
+        let cupHeight: CGFloat = 5.0
+        let lidHeight: CGFloat = 1.0
         
-        // Bottom prong
-        path.move(to: CGPoint(x: 0, y: cy + 2.0))
-        path.addLine(to: CGPoint(x: prongsWidth, y: cy + 2.0))
+        // Center the coffee cup specifically to fall on .5 coordinates for crisp 1.0 lines
+        let cx = rect.midX
+        let baseY = rect.maxY - 0.5
+        let topY = baseY - cupHeight
         
-        // Connector block limit
-        path.move(to: CGPoint(x: prongsWidth, y: cy - 3.0))
-        path.addLine(to: CGPoint(x: prongsWidth, y: cy + 3.0))
+        // Draw the main cup body (slanted iced-coffee style cup)
+        path.move(to: CGPoint(x: cx - cupBottomWidth/2, y: baseY))
+        path.addLine(to: CGPoint(x: cx + cupBottomWidth/2, y: baseY))
+        path.addLine(to: CGPoint(x: cx + cupTopWidth/2, y: topY))
+        path.addLine(to: CGPoint(x: cx - cupTopWidth/2, y: topY))
+        path.closeSubpath()
         
-        // Right connector
-        path.move(to: CGPoint(x: prongsWidth, y: cy))
-        path.addLine(to: CGPoint(x: rect.width, y: cy))
+        // Draw a dome lid
+        path.move(to: CGPoint(x: cx - cupTopWidth/2, y: topY))
+        path.addQuadCurve(to: CGPoint(x: cx + cupTopWidth/2, y: topY),
+                          control: CGPoint(x: cx, y: topY - lidHeight * 2.0))
+        
+        // Draw the bendy straw sipping out towards the battery
+        let strawStart = CGPoint(x: cx, y: topY - lidHeight + 0.5)
+        let strawBend = CGPoint(x: cx, y: topY - lidHeight - 0.5)
+        let strawEnd = CGPoint(x: cx + 3.0, y: topY - lidHeight - 0.5)
+        
+        path.move(to: strawStart)
+        path.addLine(to: strawBend)
+        path.addLine(to: strawEnd)
         
         return path
     }
