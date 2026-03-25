@@ -23,7 +23,7 @@ struct BatteryIconView: View {
     }
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 1) {
             // Plug icon (if plugged in)
             if state.isPlugged {
                 ZStack {
@@ -152,7 +152,7 @@ struct PlugIcon: Shape {
         
         // Center the coffee cup specifically to fall on .5 coordinates for crisp 1.0 lines
         let cx = rect.midX
-        let baseY = rect.maxY - 0.5
+        let baseY = rect.maxY + 2.5
         let topY = baseY - cupHeight
         
         // Draw the main cup body (slanted iced-coffee style cup)
