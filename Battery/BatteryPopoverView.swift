@@ -20,13 +20,15 @@ struct BatteryPopoverView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
+            HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Battery")
-                        .font(.headline)
-                        .foregroundColor(.primary)
                     Text(String(format: "%.0f%%", state.percentage * 100))
                         .font(.system(size: 24, weight: .bold))
+                    if timeString == "Calculating..." && (state.isPlugged || state.isCharging){
+                        Text(state.isCharging ? "Charging" : "Plugged-in")
+                            .font(.footnote)
+                            .foregroundColor(.primary)
+                    }
                 }
                 Spacer()
                 BatteryIconView(state: state)
@@ -34,16 +36,18 @@ struct BatteryPopoverView: View {
                     .frame(width: 48, height: 24)
             }
             
-            Divider()
-            
-            HStack {
-                Text(state.isCharging ? "Time to Full:" : "Time Remaining:")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text(timeString)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+            if timeString != "Calculating..."{
+                Divider()
+                
+                HStack {
+                    Text(state.isCharging ? "Time to Full:" : "Time Remaining:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(timeString)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
             }
         }
         .padding(16)
