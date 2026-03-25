@@ -92,18 +92,24 @@ enum FaceExpression {
 }
 
 struct FaceView: View {
-    var state: BatteryState
+    @ObservedObject var state: BatteryState
     
     var expression: FaceExpression {
-        if state.isPlugged && !state.isCharging { return .sad }
-        if state.percentage <= 0.20 && !state.isCharging { return .sad }
-        if state.percentage <= 0.35 && !state.isCharging { return .neutral }
-        return .happy // If it's charging, ALWAYS happy!
+        if state.isCharging {
+            return .happy // Always happy when actively drinking juice!
+        }
+        if state.isPlugged {
+            return .neutral // Plugged in but macOS paused the charge
+        }
+        if state.percentage <= 0.20 { return .sad }
+        if state.percentage <= 0.35 { return .neutral }
+        return .happy
     }
     
     var body: some View {
         Canvas { context, size in
-            let eyeSize: CGFloat = 1.5
+            // Fast chargers (>= 60W) give standard battery buddy wide awake eyes!
+            let eyeSize: CGFloat = (state.isPlugged && state.adapterWatts >= 60) ? 2.5 : 1.5
             let eyeY = size.height / 2 - 0.2
             let eyeSpacing: CGFloat = 8.8
             let centerX = size.width / 2

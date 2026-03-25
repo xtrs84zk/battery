@@ -7,6 +7,7 @@ class BatteryState: ObservableObject {
     @Published var isCharging: Bool = false
     @Published var isPlugged: Bool = false
     @Published var timeRemaining: Int = 0 // in minutes
+    @Published var adapterWatts: Int = 0 // wattage of the connected charger
     
     private var runLoopSource: CFRunLoopSource?
     
@@ -73,6 +74,13 @@ class BatteryState: ObservableObject {
                 DispatchQueue.main.async {
                     self.timeRemaining = 0 // Unknown or calculating
                 }
+            }
+            
+            if let adapterDetails = IOPSCopyExternalPowerAdapterDetails()?.takeUnretainedValue() as? [String: Any],
+               let watts = adapterDetails[kIOPSPowerAdapterWattsKey] as? Int {
+                DispatchQueue.main.async { self.adapterWatts = watts }
+            } else {
+                DispatchQueue.main.async { self.adapterWatts = 0 }
             }
         }
     }
