@@ -8,10 +8,15 @@ class BatteryState: ObservableObject {
     @Published var isPlugged: Bool = false
     @Published var timeRemaining: Int = 0 // in minutes
     @Published var adapterWatts: Int = 0 // wattage of the connected charger
+    @Published var isLowPowerMode: Bool = false
     
     private var runLoopSource: CFRunLoopSource?
     
     init() {
+        self.isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        NotificationCenter.default.addObserver(forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            self?.isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        }
         setupObserver()
         updateBatteryState()
     }

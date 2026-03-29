@@ -12,11 +12,9 @@ struct BatteryIconView: View {
     let innerGap: CGFloat = 1.0 
     
     private var juiceColor: Color {
-        // Red color overrides green when percentage is critically low!
+        // Red color overrides standard grey when percentage is critically low!
         if state.percentage <= 0.15 {
             return .red
-        } else if state.isCharging && state.percentage >= 0.95 {
-            return Color(red: 0.15, green: 0.75, blue: 0.25)
         } else {
             return Color.primary.opacity(0.4)
         }
@@ -72,10 +70,28 @@ struct BatteryIconView: View {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(Color.primary, lineWidth: strokeWidth)
                     .frame(width: bodyWidth, height: bodyHeight)
+                    .mask(
+                        ZStack(alignment: .topLeading) {
+                            Color.white
+                            if state.isLowPowerMode {
+                                Rectangle()
+                                    .fill(Color.black)
+                                    .blendMode(.destinationOut)
+                                    .frame(width: 9.5, height: 4)
+                                    .offset(x: 4.25, y: -2)
+                            }
+                        }
+                        .compositingGroup()
+                    )
                 
                 // Face
                 FaceView(state: state)
                     .frame(width: bodyWidth, height: bodyHeight)
+                    
+                if state.isLowPowerMode {
+                    TowelShape()
+                        .stroke(Color.primary, style: StrokeStyle(lineWidth: 1.0, lineCap: .round, lineJoin: .round))
+                }
             }
             // ZStack frame matches the body width plus the protruding tip
             .frame(width: bodyWidth + 1.5, height: bodyHeight)
@@ -89,12 +105,18 @@ enum FaceExpression {
     case happy
     case neutral
     case sad
+    case zen
 }
 
 struct FaceView: View {
     @ObservedObject var state: BatteryState
     
+    @State private var zzzPhase: CGFloat = 0.0
+    
     var expression: FaceExpression {
+        if state.isLowPowerMode {
+            return .zen
+        }
         if state.isCharging {
             return .happy // Always happy when actively drinking juice!
         }
@@ -114,13 +136,35 @@ struct FaceView: View {
             let eyeSpacing: CGFloat = 8.8
             let centerX = size.width / 2
             
-            // Draw Left Eye
-            let leftEyeRect = CGRect(x: centerX - eyeSpacing/2 - eyeSize/2, y: eyeY, width: eyeSize, height: eyeSize)
-            context.fill(Path(ellipseIn: leftEyeRect), with: .color(.primary))
-            
-            // Draw Right Eye
-            let rightEyeRect = CGRect(x: centerX + eyeSpacing/2 - eyeSize/2, y: eyeY, width: eyeSize, height: eyeSize)
-            context.fill(Path(ellipseIn: rightEyeRect), with: .color(.primary))
+            // Draw Eyes
+            if expression == .zen {
+                // Closed resting eyes
+                func drawClosedEye(cx: CGFloat, cy: CGFloat) {
+                    var p = Path()
+                    p.move(to: CGPoint(x: cx - 1.5, y: cy))
+                    p.addQuadCurve(to: CGPoint(x: cx + 1.5, y: cy), control: CGPoint(x: cx, y: cy + 1.5))
+                    context.stroke(p, with: .color(.primary), style: StrokeStyle(lineWidth: 1.0, lineCap: .round))
+                }
+                drawClosedEye(cx: centerX - eyeSpacing/2, cy: eyeY)
+                drawClosedEye(cx: centerX + eyeSpacing/2, cy: eyeY)
+                
+                // Floating Z particle
+                let zOpacity = 1.0 - zzzPhase
+                let zOffset = -zzzPhase * 8.0
+                var zPath = Path()
+                zPath.move(to: CGPoint(x: centerX + 7, y: -2 + zOffset))
+                zPath.addLine(to: CGPoint(x: centerX + 9, y: -2 + zOffset))
+                zPath.addLine(to: CGPoint(x: centerX + 7, y: 0 + zOffset))
+                zPath.addLine(to: CGPoint(x: centerX + 9, y: 0 + zOffset))
+                context.stroke(zPath, with: .color(.primary.opacity(Double(zOpacity))), style: StrokeStyle(lineWidth: 0.8, lineCap: .round, lineJoin: .round))
+                
+            } else {
+                let leftEyeRect = CGRect(x: centerX - eyeSpacing/2 - eyeSize/2, y: eyeY, width: eyeSize, height: eyeSize)
+                context.fill(Path(ellipseIn: leftEyeRect), with: .color(.primary))
+                
+                let rightEyeRect = CGRect(x: centerX + eyeSpacing/2 - eyeSize/2, y: eyeY, width: eyeSize, height: eyeSize)
+                context.fill(Path(ellipseIn: rightEyeRect), with: .color(.primary))
+            }
             
             // Draw Mouth
             var mouthPath = Path()
@@ -136,13 +180,18 @@ struct FaceView: View {
             case .neutral:
                 mouthPath.move(to: CGPoint(x: centerX - mouthWidth/2, y: mouthY + 0.5))
                 mouthPath.addLine(to: CGPoint(x: centerX + mouthWidth/2, y: mouthY + 0.5))
-            case .happy:
+            case .happy, .zen:
                 mouthPath.move(to: CGPoint(x: centerX - mouthWidth/2, y: mouthY))
                 mouthPath.addQuadCurve(to: CGPoint(x: centerX + mouthWidth/2, y: mouthY),
                                        control: CGPoint(x: centerX, y: mouthY + 1.8))
             }
             
             context.stroke(mouthPath, with: .color(.primary), style: StrokeStyle(lineWidth: mouthLineWidth, lineCap: .round))
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                zzzPhase = 1.0
+            }
         }
     }
 }
