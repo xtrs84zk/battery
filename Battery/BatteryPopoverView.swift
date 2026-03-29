@@ -413,7 +413,7 @@ struct AnimatedPopoverBatteryIcon: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: state.isPlugged)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: preset)
         .onAppear {
-            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+            withAnimation(.linear(duration: 6.0).repeatForever(autoreverses: false)) {
                 phase = .pi * 2
             }
             withAnimation(.linear(duration: 0.5).repeatForever(autoreverses: false)) {
