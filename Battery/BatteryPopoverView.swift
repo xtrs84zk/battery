@@ -290,12 +290,12 @@ struct AnimatedPopoverBatteryIcon: View {
     let innerGap: CGFloat = 1.0 
     
     var preset: PopoverBatteryStatePreset {
-        if state.isCharging {
+        if state.isLowPowerMode {
+            return .zenMaster
+        } else if state.isCharging {
             return .chargingSip
         } else if state.isPlugged {
             return .pluggedInSideEye
-        } else if state.isLowPowerMode {
-            return .zenMaster
         } else if state.percentage <= 0.20 {
             return .sad
         } else if state.percentage <= 0.40 {
@@ -306,7 +306,7 @@ struct AnimatedPopoverBatteryIcon: View {
     }
     
     private var juiceColor: Color {
-        if preset == .sad {
+        if state.percentage <= 0.20 {
             return .red
         } else {
             return Color.primary.opacity(0.4)
@@ -436,8 +436,8 @@ struct StrawFlowShape: Shape {
         let strawStart = CGPoint(x: cx, y: topY - lidHeight + 0.5)
         let strawBend = CGPoint(x: cx, y: topY - lidHeight - 0.5)
         
-        // Extend straw perfectly into the smiling mouth center
-        let strawEnd = CGPoint(x: cx + 18.0, y: topY - lidHeight + 1.5) 
+        // Extend straw just over the left edge of the battery instead of the centered mouth
+        let strawEnd = CGPoint(x: cx + 7.5, y: topY - lidHeight + 1.5)
         
         path.move(to: strawStart)
         path.addLine(to: strawBend)
