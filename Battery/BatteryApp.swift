@@ -22,36 +22,37 @@ class ClickThroughHostingView<Content: View>: NSHostingView<Content> {
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var statusItem: NSStatusItem!
     let batteryState = BatteryState()
-    var statusMenu: NSMenu!
+    var batteryMenu: NSMenu!
+    var contextMenu: NSMenu!
     var hostingView: NSHostingView<BatteryPopoverView>!
     var loginMenuItem: NSMenuItem!
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Setup Native Menu (Matching system menu sheets like Image 1)
-        statusMenu = NSMenu()
-        statusMenu.delegate = self
+        // 1. Primary Battery Sheet Menu (Left Click)
+        batteryMenu = NSMenu()
+        batteryMenu.delegate = self
         
-        // Custom View for Battery info
         let batteryMenuItem = NSMenuItem()
         hostingView = NSHostingView(rootView: BatteryPopoverView(state: batteryState))
         hostingView.frame = NSRect(x: 0, y: 0, width: 240, height: 90)
         batteryMenuItem.view = hostingView
-        statusMenu.addItem(batteryMenuItem)
+        batteryMenu.addItem(batteryMenuItem)
         
-        statusMenu.addItem(NSMenuItem.separator())
+        // 2. Secondary Context Menu (Right Click)
+        contextMenu = NSMenu()
+        contextMenu.delegate = self
         
-        // Start at Login item
         loginMenuItem = NSMenuItem(title: "Start at Login", action: #selector(toggleStartAtLogin(_:)), keyEquivalent: "")
         loginMenuItem.target = self
-        statusMenu.addItem(loginMenuItem)
+        contextMenu.addItem(loginMenuItem)
         
-        // Quit item
+        contextMenu.addItem(NSMenuItem.separator())
+        
         let quitItem = NSMenuItem(title: "Quit Battery", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        statusMenu.addItem(quitItem)
+        contextMenu.addItem(quitItem)
         
-        // Setup Menu Bar Item
+        // 3. Setup Menu Bar Item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.menu = statusMenu
         
         if let button = statusItem.button {
             // Draw custom view inside the button
@@ -63,15 +64,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             
             button.addSubview(buttonHostingView)
             button.frame = buttonHostingView.frame
+            
+            button.target = self
+            button.action = #selector(statusItemClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
+    }
+    
+    @objc func statusItemClicked(_ sender: NSStatusBarButton) {
+        guard let event = NSApp.currentEvent else { return }
+        
+        if event.type == .rightMouseUp {
+            loginMenuItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+            statusItem.popUpMenu(contextMenu)
+        } else {
+            let fitting = hostingView.fittingSize
+            hostingView.frame = NSRect(x: 0, y: 0, width: 240, height: max(56, fitting.height))
+            statusItem.popUpMenu(batteryMenu)
         }
     }
     
     func menuWillOpen(_ menu: NSMenu) {
-        loginMenuItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        
-        // Dynamically fit height based on whether "Calculating..." or normal view is shown
-        let fitting = hostingView.fittingSize
-        hostingView.frame = NSRect(x: 0, y: 0, width: 240, height: max(60, fitting.height))
+        if menu == batteryMenu {
+            let fitting = hostingView.fittingSize
+            hostingView.frame = NSRect(x: 0, y: 0, width: 240, height: max(56, fitting.height))
+        } else if menu == contextMenu {
+            loginMenuItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        }
     }
     
     @objc func toggleStartAtLogin(_ sender: AnyObject?) {
